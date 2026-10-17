@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh" style="background:#ffffff;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>点赞</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #ffffff; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 80px;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #37352f;
+    }
+    .label { font-size: 15px; }
+    #btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px solid #e3e2e0;
+      border-radius: 999px;
+      background: #fff;
+      font-size: 15px;
+      color: #37352f;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #btn .heart { font-size: 18px; transition: transform .2s; }
+    #btn.liked { border-color: #f4b6c2; background: #fff5f7; color: #e0245e; cursor: default; }
+    #btn.pop .heart { transform: scale(1.35); }
+  </style>
+</head>
+<body>
+  <span class="label">喜欢该图片</span>
+  <button id="btn" type="button"><span class="heart">🤍</span><span id="count">·</span></button>
+
+  <script>
+    // 计数 ID 取自文件名：ep01.html → ep01，ep02.html → ep02
+    var name = location.pathname.split("/").pop().replace(".html", "") || "default";
+    var id = new URLSearchParams(location.search).get("id") || name;
+    var API = "https://abacus.jasoncameron.dev";
+    var NS = "enpian-zhilu";
+    var storeKey = "liked-" + id;
+
+    var btn = document.getElementById("btn");
+    var countEl = document.getElementById("count");
+    var heart = btn.querySelector(".heart");
+
+    function hasLiked() {
+      try { return localStorage.getItem(storeKey) === "1"; } catch (e) { return false; }
+    }
+    function markLiked() {
+      try { localStorage.setItem(storeKey, "1"); } catch (e) {}
+    }
+    function showLiked() {
+      btn.classList.add("liked");
+      heart.textContent = "❤️";
+    }
+
+    if (hasLiked()) showLiked();
+
+    fetch(API + "/get/" + NS + "/" + id)
+      .then(function (r) { return r.ok ? r.json() : { value: 0 }; })
+      .then(function (d) { countEl.textContent = d.value || 0; })
+      .catch(function () { countEl.textContent = "0"; });
+
+    btn.addEventListener("click", function () {
+      if (hasLiked()) return;
+      markLiked();
+      showLiked();
+      btn.classList.add("pop");
+      setTimeout(function () { btn.classList.remove("pop"); }, 200);
+      var current = parseInt(countEl.textContent, 10) || 0;
+      countEl.textContent = current + 1;
+      fetch(API + "/hit/" + NS + "/" + id)
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d && d.value) countEl.textContent = d.value; })
+        .catch(function () {});
+    });
+  </script>
+</body>
+</html>
